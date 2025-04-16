@@ -1,32 +1,42 @@
 trigger:
-- main
+  - main  # or your preferred branch
 
 variables:
   TF_VERSION: '1.5.7'
 
+  # Azure Service Principal credentials (best to use secret variables in real usage)
+  ARM_CLIENT_ID: '76d3056e-1da2-4b5c-b055-1d674064bdd2'
+  ARM_CLIENT_SECRET: 'oOO8Q~nKxDJIqwcSmGk3V97hRKd-sf-ARpIepcJi'
+  ARM_SUBSCRIPTION_ID: 'd5f5198e-d19e-4e8b-83d1-f8c080acf8fe'
+  ARM_TENANT_ID: 'df28c44c-39ef-499f-bdf4-3fc2656e6d00'
+
 stages:
-- stage: Terraform
-  jobs:
-  - job: Deploy
-    pool:
-      vmImage: 'ubuntu-latest'
+  - stage: Terraform
+    jobs:
+      - job: RunTerraform
+        pool:
+          vmImage: 'ubuntu-latest'
 
-    steps:
-    - task: UseTerraform@0
-      inputs:
-        terraformVersion: '$(TF_VERSION)'
+        steps:
+          # Step 1: Install Terraform
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: 'latest'  # Specify the version here
 
-    - script: terraform --version
-      displayName: 'Show Terraform Version'
+          # Step 2: Show Terraform version (optional)
+          - script: terraform --version
+            displayName: 'Show Terraform Version'
 
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'azdemosvc'  # <-- Name of your service connection
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          cd terraform
-          terraform init
-          terraform plan -out=tfplan
-          terraform apply -auto-approve tfplan
-      displayName: 'Run Terraform With Service Connection'
+          # Step 3: Run Terraform commands (Init, Plan, Apply)
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'azdemosvc'  # <-- Name of your service connection
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                cd terraform  # Navigate to the terraform directory if needed
+                terraform init
+                terraform plan -out=tfplan
+                terraform apply -auto-approve tfplan
+            displayName: 'Run Terraform With Service Connection'
