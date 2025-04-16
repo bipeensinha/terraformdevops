@@ -1,0 +1,32 @@
+trigger:
+- main
+
+variables:
+  TF_VERSION: '1.5.7'
+
+stages:
+- stage: Terraform
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+    - task: UseTerraform@0
+      inputs:
+        terraformVersion: '$(TF_VERSION)'
+
+    - script: terraform --version
+      displayName: 'Show Terraform Version'
+
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'azdemosvc'  # <-- Name of your service connection
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          cd terraform
+          terraform init
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
+      displayName: 'Run Terraform With Service Connection'
